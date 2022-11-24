@@ -17,57 +17,57 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 
 
-async function run(){ 
+async function run() {
     try {
-        const categoriesCollection =client.db('carResale').collection('categories')
-        const carsCollection =client.db('carResale').collection('cars')
-        const ordersCollection =client.db('carResale').collection('orders')
+        const categoriesCollection = client.db('carResale').collection('categories')
+        const carsCollection = client.db('carResale').collection('cars')
+        const ordersCollection = client.db('carResale').collection('orders')
 
-//------------------Get Api-------------
+        //------------------Get Api-------------
 
-        app.get('/categories', async(req,res)=>{
-            const query={}
-            const result= await categoriesCollection.find(query).toArray()
+        app.get('/categories', async (req, res) => {
+            const query = {}
+            const result = await categoriesCollection.find(query).toArray()
             res.send(result)
         })
-        app.get('/categories:id',async (req,res)=>{
+        app.get('/categories:id', async (req, res) => {
             const id = req.params.id
             const query = {}
             const cars = await carsCollection.find(query).toArray()
-            const categories_id =cars.filter(car=> car.category_id === id)
+            const categories_id = cars.filter(car => car.category_id === id)
             res.send(categories_id)
         })
 
-        app.get('/cars',async(req,res)=>{
-            const query={}
-            const result= await carsCollection.find(query).toArray()
+        app.get('/cars', async (req, res) => {
+            const query = {}
+            const result = await carsCollection.find(query).toArray()
             res.send(result)
         })
-        app.get('/cars/:id',async(req,res)=>{
+        app.get('/cars/:id', async (req, res) => {
             const id = req.params.id
-            const query={_id:ObjectId(id)}
-            const car= await carsCollection.findOne(query)
+            const query = { _id: ObjectId(id) }
+            const car = await carsCollection.findOne(query)
             res.send(car)
             console.log(car);
         })
 
-        app.get('/',(req,res)=>{
+        app.get('/', (req, res) => {
             res.send('CAr KInba')
         })
 
-        app.post('/orders',async(req,res)=>{
-            const query=req.body
+        app.post('/orders', async (req, res) => {
+            const query = req.body
             console.log(query)
-            const result=await ordersCollection.insertOne(query)
+            const result = await ordersCollection.insertOne(query)
             res.send(result)
         })
 
     } catch (error) {
         console.log(error)
-        
+
     }
 }
 run()
-app.listen(port, ()=>{
-    console.log("Car Server is running",port);
+app.listen(port, () => {
+    console.log("Car Server is running", port);
 })
