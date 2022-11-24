@@ -55,6 +55,12 @@ async function run() {
             res.send('CAr KInba')
         })
 
+        app.get('/orders',async(req,res)=>{
+            const email = req.query.email
+            const query = {email: email}
+            const result = await ordersCollection.find(query).toArray()
+            res.send(result)
+        })
         app.post('/orders', async (req, res) => {
             const query = req.body
             console.log(query)
