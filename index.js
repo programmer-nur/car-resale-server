@@ -1,5 +1,5 @@
 const express = require('express')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const cors = require('cors')
 require('dotenv').config()
@@ -21,6 +21,9 @@ async function run(){
     try {
         const categoriesCollection =client.db('carResale').collection('categories')
         const carsCollection =client.db('carResale').collection('cars')
+        const ordersCollection =client.db('carResale').collection('orders')
+
+//------------------Get Api-------------
 
         app.get('/categories', async(req,res)=>{
             const query={}
@@ -40,12 +43,24 @@ async function run(){
             const result= await carsCollection.find(query).toArray()
             res.send(result)
         })
-
+        app.get('/cars/:id',async(req,res)=>{
+            const id = req.params.id
+            const query={_id:ObjectId(id)}
+            const car= await carsCollection.findOne(query)
+            res.send(car)
+            console.log(car);
+        })
 
         app.get('/',(req,res)=>{
             res.send('CAr KInba')
         })
 
+        app.post('/orders',async(req,res)=>{
+            const query=req.body
+            console.log(query)
+            const result=await ordersCollection.insertOne(query)
+            res.send(result)
+        })
 
     } catch (error) {
         console.log(error)
