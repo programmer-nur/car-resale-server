@@ -1,7 +1,8 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
-const cors = require('cors')
+const cors = require('cors');
+const { query } = require('express');
 require('dotenv').config()
 const port = process.env.Port || 5000;
 
@@ -22,6 +23,7 @@ async function run() {
         const categoriesCollection = client.db('carResale').collection('categories')
         const carsCollection = client.db('carResale').collection('cars')
         const ordersCollection = client.db('carResale').collection('orders')
+        const usersCollection = client.db('carResale').collection('users')
 
         //------------------Get Api-------------
 
@@ -48,13 +50,23 @@ async function run() {
             const query = { _id: ObjectId(id) }
             const car = await carsCollection.findOne(query)
             res.send(car)
-            console.log(car);
         })
 
+        app.post('/cars', async(req,res)=>{
+            const query=req.body
+            const result=await carsCollection.insertOne(query)
+            res.send(result)
+        })
         app.get('/', (req, res) => {
             res.send('CAr KInba')
         })
 
+        app.get('/orders/:id', async(req,res)=>{
+            const id = req.params.id;
+            const query={_id:ObjectId(id)}
+            const order= await ordersCollection.findOne(query)
+            res.send(order)
+        })
         app.get('/orders',async(req,res)=>{
             const email = req.query.email
             const query = {email: email}
@@ -63,10 +75,64 @@ async function run() {
         })
         app.post('/orders', async (req, res) => {
             const query = req.body
-            console.log(query)
             const result = await ordersCollection.insertOne(query)
             res.send(result)
         })
+
+
+        app.get('/users', async(req,res)=>{
+            const query = {}
+            const users= await usersCollection.find(query).toArray()
+            res.send(users)
+          })
+          
+         
+      app.get('/user',async(req,res)=>{
+        let query ={}
+        if(req.query.opinion== 'Buyer'){
+            query={
+                opinion:req.query.opinion
+            }
+        }
+        const result = await usersCollection.find(query).toArray()
+        res.send(result)
+      })
+      app.get('/userSealer',async(req,res)=>{
+        let query ={}
+        if(req.query.opinion== 'Sealer'){
+            query={
+                opinion:req.query.opinion
+            }
+        }
+        const result = await usersCollection.find(query).toArray()
+        res.send(result)
+      })
+
+      app.delete('/users/:id', async(req,res)=>{
+        const id = req.params.id;
+        const query ={_id:ObjectId(id)}
+        const result= await usersCollection.deleteOne(query)
+        res.send(result)
+      })
+    //   app.delete('/users/:email', async(req,res)=>{
+    //     const email = req.params.email;
+    //     const query ={email:email}
+    //     const result= await usersCollection.deleteOne(query)
+    //     res.send(result)
+    //   })
+        //   app.get('/users/admin/:email', async (req,res)=>{
+        //     const email = req.params.email;
+        //     const query = {email}
+        //     const user = await usersCollection.findOne(query)
+        //     res.send({isAdmin: user?.role === 'admin'})
+        //   })
+      
+      
+          app.post('/users', async (req,res)=>{
+            const user = req.body
+            const result = await usersCollection.insertOne(user)
+            res.send(result)
+          })
 
     } catch (error) {
         console.log(error)
