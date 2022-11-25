@@ -2,6 +2,7 @@ const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
 const { query } = require('express');
 require('dotenv').config()
 const port = process.env.Port || 5000;
@@ -108,6 +109,17 @@ async function run() {
         res.send(result)
       })
 
+      app.get('/jwt', async(req,res)=>{
+        const email=req.query.email;
+        const user = {email:email}
+        if(user && user.email){
+           const token= jwt.sign({email},process.env.DB_ACCESS_TOKEN, {expiresIn:'1d'})
+           return res.send({Token:token})
+        }
+        const result = await usersCollection.findOne(user)
+        console.log(result)
+        res.status(403).send('Unbenden')
+      })
       app.delete('/users/:id', async(req,res)=>{
         const id = req.params.id;
         const query ={_id:ObjectId(id)}
