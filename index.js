@@ -127,7 +127,6 @@ async function run() {
         //     res.send({isAdmin: user?.role === 'admin'})
         //   })
       
-      
           app.post('/users', async (req,res)=>{
             const user = req.body
             const result = await usersCollection.insertOne(user)
