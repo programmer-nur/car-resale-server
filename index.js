@@ -4,9 +4,10 @@ const app = express()
 const cors = require('cors');
 const jwt = require('jsonwebtoken')
 const { query } = require('express');
+const Stripe = require('stripe')
 require('dotenv').config()
 const port = process.env.Port || 5000;
-
+const stripe = Stripe(process.env.DB_STRIP_SK)
 
 // Midelware
 app.use(cors())
@@ -40,6 +41,7 @@ async function run() {
         const ordersCollection = client.db('carResale').collection('orders')
         const usersCollection = client.db('carResale').collection('users')
         const reportsCollection = client.db('carResale').collection('reports')
+        const paymentsCollection = client.db('carResale').collection('payments')
 
         //------------------Get Api-------------
 
@@ -65,7 +67,7 @@ async function run() {
             res.send(result)
         })
         // Single Product
-        app.get('/cars/:id', async (req, res) => {
+        app.get('/cars/:id',verifyJWT, async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
             const car = await carsCollection.findOne(query)
@@ -92,14 +94,14 @@ async function run() {
             res.send(result)
         })
         // All Users
-        app.get('/users', async (req, res) => {
+        app.get('/users',verifyJWT, async (req, res) => {
             const query = {}
             const users = await usersCollection.find(query).toArray()
             res.send(users)
         })
 
         // All Buyer
-        app.get('/user', async (req, res) => {
+        app.get('/user',verifyJWT, async (req, res) => {
             let query = {}
             if (req.query.role == 'Buyer') {
                 query = {
@@ -109,10 +111,28 @@ async function run() {
             const result = await usersCollection.find(query).toArray()
             res.send(result)
         })
+        // My Product 
+        app.get('/myCars',verifyJWT, async(req,res)=>{
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            if(email !== decodedEmail){
+              return res.status(403).send({message: 'forbidden access'})
+            }
+            const query = {email: email}
+            const result = await carsCollection.find(query).toArray()
+            res.send(result)
+        })
+       
+        // All Report
+        app.get('/reports',async(req,res)=>{
+            const query = {};
+            const result = await reportsCollection.find(query).toArray()
+            res.send(result)
+        })
 
         // All Sealer
         
-        app.get('/userSealer', async (req, res) => {
+        app.get('/userSealer',verifyJWT, async (req, res) => {
             let query = {}
             if (req.query.role == 'Sealer') {
                 query = {
@@ -131,13 +151,13 @@ async function run() {
             const result = await reportsCollection.insertOne(query)
             res.send(result)
         })
-
+        // Create New Products
         app.post('/cars', async (req, res) => {
             const query = req.body
             const result = await carsCollection.insertOne(query)
             res.send(result)
         })
-       
+
         // Create New User Added
         app.post('/users', async (req, res) => {
             const user = req.body
@@ -152,9 +172,6 @@ async function run() {
             res.send(result)
         })
 
-
-
-     
 
       
         // Jwt api
@@ -184,16 +201,7 @@ async function run() {
         })
 
 
-        app.get('/myCars',verifyJWT, async(req,res)=>{
-            const email = req.query.email;
-            const decodedEmail = req.decoded.email;
-            if(email !== decodedEmail){
-              return res.status(403).send({message: 'forbidden access'})
-            }
-            const query = {email: email}
-            const result = await carsCollection.find(query).toArray()
-            res.send(result)
-        })
+       
 
 
         // Admin Api
@@ -233,7 +241,7 @@ async function run() {
             const option = { upsert: true }
             const updateDoc = {
                 $set: {
-                    verify: 'verified'
+                    verify: true
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc, option)
@@ -262,27 +270,44 @@ async function run() {
             res.send({isSealer: user?.role === 'Sealer'})
           })
 
+// --------Payment Api---------
 
-
-        //   app.get('/users/buyer/:email', async (req,res)=>{
-        //     const email = req.params.email;
-        //     console.log(email)
-        //     const query = {email}
-        //     const user = await usersCollection.findOne(query)
-        //     res.send({isAdmin: user?.role === 'Buyer'})
-        //   })
-        //   app.get('/users/sealer/:email', async (req,res)=>{
-        //     const email = req.params.email;
-        //     const query = {email}
-        //     const user = await usersCollection.findOne(query)
-        //     res.send({isAdmin: user?.role === 'Sealer'})
-        //   })
-
-       
-
-
+          app.post('/payments', async(req,res)=>{
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            console.log(result);
+            const id = payment.orderId;
+            const filter = {_id:ObjectId(id)}
+            const updateDoc= {
+              $set: {
+                paid: true,
+                transactionId: payment.transactionId
+              }
+            }
+            const updatedResult = await ordersCollection.updateOne(filter,updateDoc)
+      
+            res.send(result)
+          })
+    
+          app.post('/create-payment-intent', async (req, res) => {
+            const booking = req.body;
+            const price = booking.productPrice;
+            const amount = price * 100;
+          
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'usd',
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+      
         app.get('/', (req, res) => {
-            res.send('CAr KInba')
+            res.send('Car Seal')
         })
 
     } catch (error) {
