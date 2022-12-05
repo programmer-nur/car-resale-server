@@ -41,6 +41,7 @@ async function run() {
         const ordersCollection = client.db('carResale').collection('orders')
         const usersCollection = client.db('carResale').collection('users')
         const reportsCollection = client.db('carResale').collection('reports')
+        const reviewsCollection = client.db('carResale').collection('reviews')
         const paymentsCollection = client.db('carResale').collection('payments')
 
         //------------------Get Api-------------
@@ -59,6 +60,12 @@ async function run() {
             const cars = await carsCollection.find(query).toArray()
             const categories_id = cars.filter(car => car.category_id === id)
             res.send(categories_id)
+        })
+        // All Reviews
+        app.get('/reviews',async(rew,res)=>{
+            const query={}
+            const reviews = await reviewsCollection.find(query).toArray()
+            res.send(reviews)
         })
         // All Products
         app.get('/cars', async (req, res) => {
