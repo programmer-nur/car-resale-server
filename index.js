@@ -9,8 +9,12 @@ require('dotenv').config()
 const port = process.env.Port || 5000;
 const stripe = Stripe(process.env.DB_STRIP_SK)
 
+const corsOptions = {
+    origin: true,
+    credentials: true,
+  };
 // Midelware
-app.use(cors())
+app.use('*', cors(corsOptions));
 app.use(express.json())
 
 function verifyJWT(req, res, next) {
@@ -100,6 +104,17 @@ async function run() {
             const result = await ordersCollection.find(query).toArray()
             res.send(result)
         })
+
+
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.deleteOne(query)
+            res.send(result)
+        })
+
+
         // All Users
         app.get('/users',verifyJWT, async (req, res) => {
             const query = {}
