@@ -10,12 +10,16 @@ const port = process.env.Port || 5000;
 const stripe = Stripe(process.env.DB_STRIP_SK)
 
 const corsOptions = {
-    origin: true,
+    origin: 'https://car-resale-d6efe.web.app',
     credentials: true,
-  };
-// Midelware
-app.use('*', cors(corsOptions));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json())
+app.use((req, res, next) => {
+    console.log('CORS middleware is being applied.');
+    cors(corsOptions)(req, res, next);
+});
 
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization
@@ -66,8 +70,8 @@ async function run() {
             res.send(categories_id)
         })
         // All Reviews
-        app.get('/reviews',async(rew,res)=>{
-            const query={}
+        app.get('/reviews', async (rew, res) => {
+            const query = {}
             const reviews = await reviewsCollection.find(query).toArray()
             res.send(reviews)
         })
@@ -78,7 +82,7 @@ async function run() {
             res.send(result)
         })
         // Single Product
-        app.get('/cars/:id',verifyJWT, async (req, res) => {
+        app.get('/cars/:id', verifyJWT, async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
             const car = await carsCollection.findOne(query)
@@ -91,7 +95,7 @@ async function run() {
             const order = await ordersCollection.findOne(query)
             res.send(order)
         })
-        
+
         // Specifie User All Orders
 
         app.get('/orders', verifyJWT, async (req, res) => {
@@ -116,14 +120,14 @@ async function run() {
 
 
         // All Users
-        app.get('/users',verifyJWT, async (req, res) => {
+        app.get('/users', verifyJWT, async (req, res) => {
             const query = {}
             const users = await usersCollection.find(query).toArray()
             res.send(users)
         })
 
         // All Buyer
-        app.get('/user',verifyJWT, async (req, res) => {
+        app.get('/user', verifyJWT, async (req, res) => {
             let query = {}
             if (req.query.role == 'Buyer') {
                 query = {
@@ -134,27 +138,27 @@ async function run() {
             res.send(result)
         })
         // My Product 
-        app.get('/myCars',verifyJWT, async(req,res)=>{
+        app.get('/myCars', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
-            if(email !== decodedEmail){
-              return res.status(403).send({message: 'forbidden access'})
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'forbidden access' })
             }
-            const query = {email: email}
+            const query = { email: email }
             const result = await carsCollection.find(query).toArray()
             res.send(result)
         })
-       
+
         // All Report
-        app.get('/reports',async(req,res)=>{
+        app.get('/reports', async (req, res) => {
             const query = {};
             const result = await reportsCollection.find(query).toArray()
             res.send(result)
         })
 
         // All Sealer
-        
-        app.get('/userSealer',verifyJWT, async (req, res) => {
+
+        app.get('/userSealer', verifyJWT, async (req, res) => {
             let query = {}
             if (req.query.role == 'Sealer') {
                 query = {
@@ -166,10 +170,10 @@ async function run() {
         })
 
 
-//------------------Post Api-------------
+        //------------------Post Api-------------
         // Create New Product
-        app.post('/report',async(req,res)=>{
-            const query=req.body
+        app.post('/report', async (req, res) => {
+            const query = req.body
             const result = await reportsCollection.insertOne(query)
             res.send(result)
         })
@@ -195,7 +199,7 @@ async function run() {
         })
 
 
-      
+
         // Jwt api
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
@@ -223,7 +227,7 @@ async function run() {
         })
 
 
-       
+
 
 
         // Admin Api
@@ -271,51 +275,51 @@ async function run() {
         });
 
 
-          app.get('/users/admin/:email', async (req,res)=>{
+        app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
-            const query = {email}
+            const query = { email }
             const user = await usersCollection.findOne(query)
-            res.send({isAdmin: user?.role === 'admin'})
-          })
+            res.send({ isAdmin: user?.role === 'admin' })
+        })
 
-          app.get('/users/buyer/:email', async (req,res)=>{
+        app.get('/users/buyer/:email', async (req, res) => {
             const email = req.params.email;
-            const query = {email}
+            const query = { email }
             const user = await usersCollection.findOne(query)
-            res.send({isBuyer: user?.role === 'Buyer'})
-          })
+            res.send({ isBuyer: user?.role === 'Buyer' })
+        })
 
-          app.get('/users/sealer/:email', async (req,res)=>{
+        app.get('/users/sealer/:email', async (req, res) => {
             const email = req.params.email;
-            const query = {email}
+            const query = { email }
             const user = await usersCollection.findOne(query)
-            res.send({isSealer: user?.role === 'Sealer'})
-          })
+            res.send({ isSealer: user?.role === 'Sealer' })
+        })
 
-// --------Payment Api---------
+        // --------Payment Api---------
 
-          app.post('/payments', async(req,res)=>{
+        app.post('/payments', async (req, res) => {
             const payment = req.body;
             const result = await paymentsCollection.insertOne(payment);
             console.log(result);
             const id = payment.orderId;
-            const filter = {_id:ObjectId(id)}
-            const updateDoc= {
-              $set: {
-                paid: true,
-                transactionId: payment.transactionId
-              }
+            const filter = { _id: ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
             }
-            const updatedResult = await ordersCollection.updateOne(filter,updateDoc)
-      
+            const updatedResult = await ordersCollection.updateOne(filter, updateDoc)
+
             res.send(result)
-          })
-    
-          app.post('/create-payment-intent', async (req, res) => {
+        })
+
+        app.post('/create-payment-intent', async (req, res) => {
             const booking = req.body;
             const price = booking.productPrice;
             const amount = price * 100;
-          
+
             const paymentIntent = await stripe.paymentIntents.create({
                 currency: 'usd',
                 amount: amount,
@@ -327,7 +331,7 @@ async function run() {
                 clientSecret: paymentIntent.client_secret,
             });
         });
-      
+
         app.get('/', (req, res) => {
             res.send('Car Seal')
         })
