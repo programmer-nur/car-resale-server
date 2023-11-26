@@ -17,7 +17,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json())
 app.use((req, res, next) => {
-    console.log('CORS middleware is being applied.');
     cors(corsOptions)(req, res, next);
 });
 
